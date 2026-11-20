@@ -1,0 +1,37 @@
+name: Deploy mantis1024.ai
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: deploy
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bilder und Schriften dekodieren
+        run: |
+          set -e
+          mkdir out
+          cat _pack/site.tgz.b64.part* | base64 -d | tar xz -C out
+          cd _b64
+          find . -name '*.b64' | while read -r f; do
+            t="../out/${f%.b64}"; mkdir -p "$(dirname "$t")"; base64 -d "$f" > "$t"
+          done
+          cd ..
+          touch out/.nojekyll
+          echo "Dateien: $(find out -type f | wc -l)"
+          test -f out/assets/img/mantis-logo-lowpoly-1024.webp
+      - name: Nach gh-pages veröffentlichen
+        run: |
+          cd out
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Deploy ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" gh-pages
