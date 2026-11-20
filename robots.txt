@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://mantis1024.ai/sitemap.xml
